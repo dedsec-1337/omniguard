@@ -1,0 +1,9 @@
+gradio
+transformers
+torch
+librosa
+numpy
+soundfile
+spaces
+faster-whisper
+piper-tts
