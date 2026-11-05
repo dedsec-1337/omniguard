@@ -1,3 +1,10 @@
+# 🛡️ OMNIGUARD — Protect your voice, protect your people.
+
+**GitHub:** https://github.com/dedsec-1337/omniguard.git
+
+OMNIGUARD is a two-tool web app that fights AI voice scams (vishing) and
+makes the answer usable for people who cannot rely on reading a screen.
+
 ---
 title: OMNIGUARD
 emoji: 🛡️
@@ -9,13 +16,6 @@ python_version: "3.12"
 app_file: app.py
 pinned: false
 ---
-
-# 🛡️ OMNIGUARD — Protect your voice, protect your people.
-
-**GitHub:** https://github.com/dedsec-1337/omniguard.git
-
-OMNIGUARD is a two-tool web app that fights AI voice scams (vishing) and
-makes the answer usable for people who cannot rely on reading a screen.
 
 ## Real-world impact
 
