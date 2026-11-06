@@ -1,10 +1,10 @@
 # OMNIGUARD — 2-minute exhibition script
 
-**Before the crowd arrives (not spoken):** run both example clips once. Confirm
+**Before the crowd arrives (not spoken):** run `python calibrate.py` once on your
+real and AI clips, restart the app, then run both example clips. Confirm
 `real_sample.wav` shows 🟢 and `fake_sample.wav` shows 🔴. If either is off, swap
-the clip (the detector knows ElevenLabs, Amazon Polly, Kokoro, Hume AI,
-Speechify and Luvvoice best). Start the app with `HF_HUB_OFFLINE=1 python app.py`
-in case venue Wi-Fi fails.
+the clip for one the detectors handle. Start the app with
+`HF_HUB_OFFLINE=1 python app.py` in case venue Wi-Fi fails.
 
 ---
 
@@ -19,16 +19,16 @@ with anything they can see. OMNIGUARD is built for them."
 
 ## 0:25 – 0:55 | Live demo, Tab 1: Deepfake Detector
 
-- Click **▶ Real voice sample**, then **Check this voice**.
-  "A real human voice: green, low fake probability."
-- Click **▶ AI voice sample**, then **Check this voice**.
+- Click **Real voice**, then **Check this voice**.
+  "A real human voice: green, low fake probability. Two detectors vote, and open 'How we decided' to see each one."
+- Click **AI voice**, then **Check this voice**.
   "An AI voice: red. It shows the exact percentage, why this matters (unnatural
   pauses, smooth rhythm, missing breath sounds) and a safety tip: never transfer
   money on one phone call, call back on a known number."
 
 ## 0:55 – 1:25 | Live demo, Tab 2: Accessibility Assistant
 
-- Switch to **♿ Accessibility Assistant**. The AI clip is already loaded.
+- Switch to **♿ Accessibility Assistant**. Click **AI voice** to load the clip.
 - Press the big **🔊 Play Voice Alert** button.
   "It transcribes what was said, then speaks the verdict aloud: 'Warning. This
   voice is likely AI-generated. Do not send money. Call a family member first.'
