@@ -209,3 +209,10 @@ Use a different model with `OMNIGUARD_LLM=qwen2.5:3b`, or turn it off with `OMNI
 | `OMNIGUARD_SEMANTIC` | `1` | `0` skips the zero-shot scam-wording model (about 0.7 GB) |
 | `OMNIGUARD_LLM` / `OLLAMA_HOST` | `qwen2.5:1.5b` / `127.0.0.1:11434` | local LLM |
 | `OMNIGUARD_REGION` | `IN` | helpline text |
+
+
+## License
+
+This project’s application code is released under the [MIT License](LICENSE).
+
+Some third-party deepfake detection models used by OmniGuard have their own licences (including non-commercial ones). Please respect the individual model licences.
