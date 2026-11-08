@@ -82,7 +82,8 @@ def score_folder(folder, label):
     rows = []
     for path in list_clips(folder):
         try:
-            rows.append((path.name, label, app.raw_scores(load_clip(path))))
+            with app.rt.profile_scope("balanced"):  # always score with every detector and all windows
+                rows.append((path.name, label, app.raw_scores(load_clip(path))))
         except Exception as exc:  # noqa: BLE001 - skip unreadable clips, keep going
             print(f"  skipped {path.name}: {exc}")
     return rows
@@ -109,6 +110,7 @@ def main(argv=None):
         print(f"{name[:34]:34s} {label:5s} " + " ".join(f"{raw.get(k, float('nan')):7.2f}" for k in keys))
 
     thresholds = {}
+    weights = {}  # ADDED: voting weight per detector, learned from its AUC on your clips
     print("\nPer-detector result (AUC 1.00 = perfect separation; 0.50 = coin flip):")
     for k in keys:
         fake = [raw[k] for _, lab, raw in rows if lab == "fake" and k in raw]
@@ -117,6 +119,7 @@ def main(argv=None):
             continue
         a, b = fit_scaling(fake, real)
         thresholds[k] = {"a": round(a, 4), "b": round(b, 4)}
+        weights[k] = round(max(0.05, 2 * auc(fake, real) - 1), 3)  # coin-flip detectors get ~0 vote
         cut = float(1 / (1 + np.exp(b / a)))  # raw score that maps to 50%
         before = (np.mean([f >= 0.5 for f in fake]), np.mean([r >= 0.5 for r in real]))
         after = (np.mean([apply_scaling(f, a, b) >= 0.5 for f in fake]),
@@ -125,6 +128,7 @@ def main(argv=None):
               f"AI caught {before[0]:.0%} -> {after[0]:.0%}, real wrongly flagged {before[1]:.0%} -> {after[1]:.0%}")
 
     app.CALIBRATION.update(thresholds)
+    app.CAL_WEIGHTS.update(weights)
     verdicts = {"real": {"green": 0, "yellow": 0, "red": 0}, "fake": {"green": 0, "yellow": 0, "red": 0}}
     for _, label, raw in rows:
         ps = [app.calibrated(r, k) for k, r in raw.items()]  # uses the freshly fitted scaling
@@ -140,7 +144,15 @@ def main(argv=None):
     if args.dry_run:
         print("\nDry run: calibration.json not written.")
         return thresholds
-    Path(app.HERE / "calibration.json").write_text(json.dumps(thresholds, indent=2) + "\n")
+    # ADDED: merge into any existing file so detectors that were not loaded this time keep their values
+    path = Path(app.HERE / "calibration.json")
+    try:
+        existing = json.loads(path.read_text())
+    except Exception:  # noqa: BLE001
+        existing = {}
+    merged = {**existing, **thresholds, "_weights": {**existing.get("_weights", {}), **weights}}
+    path.write_text(json.dumps(merged, indent=2) + "\n")
+    print("Voting weights from your clips: " + ", ".join(f"{k} {v:g}" for k, v in weights.items()))
     print(f"\nSaved {app.HERE / 'calibration.json'}. Restart the app to use it.")
     return thresholds
 

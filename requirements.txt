@@ -8,3 +8,4 @@ spaces
 faster-whisper
 piper-tts
 einops
+sentencepiece

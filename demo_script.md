@@ -50,3 +50,13 @@ verify by calling back on a known number."
 
 "Next: a native Android app that checks live calls, and a browser-only
 JavaScript version so your voice never leaves your device. Thank you."
+
+
+---
+
+## Optional 30-second segment: the Voice Assistant
+
+Open the **🗣️ Voice Assistant** tab. Press the microphone and say: "I think I am being scammed." Let it answer out loud,
+then say "slower" and watch the speed slider move. Click **I already sent money** to show the step-by-step plan, then switch on
+**Large text** and **High contrast**. Closing line: "It runs on this laptop, with no cloud and no cost, and it works
+by voice for people who cannot rely on a screen."
