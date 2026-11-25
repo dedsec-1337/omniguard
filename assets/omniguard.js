@@ -55,6 +55,38 @@
   };
   window.ogStopAudio = function () { document.querySelectorAll("audio").forEach(function (a) { try { a.pause(); } catch (e) {} }); };
 
+  /* Force-play the newest spoken-alert / spoken-answer audio after a user click.
+     Gradio autoplay alone is blocked by browsers and often fails on the 2nd update. */
+  window.ogForcePlay = function () {
+    var tries = 0;
+    function attempt() {
+      tries += 1;
+      var nodes = document.querySelectorAll(
+        "#og-speech-b audio, #og-speech-v audio, .og-audio audio, audio"
+      );
+      var a = null;
+      for (var i = nodes.length - 1; i >= 0; i--) {
+        if (nodes[i] && nodes[i].src) { a = nodes[i]; break; }
+      }
+      if (!a) {
+        if (tries < 12) setTimeout(attempt, 120);
+        return;
+      }
+      try {
+        a.muted = false;
+        a.volume = 1;
+        a.currentTime = 0;
+        var p = a.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function () {
+            /* still blocked — user can press the player controls */
+          });
+        }
+      } catch (e) {}
+    }
+    setTimeout(attempt, 80);
+  };
+
   /* ---- keyboard: Alt+1/2/3 pages, Alt+M microphone, Alt+L log, Alt+T theme, "/" question box, Esc ------------ */
   function typing(el) { return el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable); }
   document.addEventListener("keydown", function (e) {

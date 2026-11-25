@@ -492,16 +492,26 @@ def _transcribe_whisper(audio):
 
 
 def speak(text):
-    """Return a path to a spoken WAV of `text`, or None if TTS is unavailable."""
-    if VOICE is None:
+    """Speak `text` with Piper. Returns a filepath Gradio can play, or None if TTS is down.
+
+    Writes a real PCM WAV (16-bit mono) so browsers and Gradio 6 both accept it.
+    Uses guardian.speakable() so digits / helplines are read clearly.
+    """
+    if VOICE is None or not (text or "").strip():
         return None
     try:
+        clean = gd.speakable(text)
         out = tempfile.NamedTemporaryFile(suffix=".wav", prefix="omniguard_", delete=False)
         out.close()
         with wave.open(out.name, "wb") as wav_file:
-            VOICE.synthesize_wav(text, wav_file)
+            VOICE.synthesize_wav(clean, wav_file)
+        if Path(out.name).stat().st_size < 44:
+            print("[OMNIGUARD] Piper wrote an empty WAV")
+            return None
         return out.name
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        print(f"[OMNIGUARD] TTS failed: {type(exc).__name__}: {exc}")
+        LOG.add("system", "Voice alert failed", f"{type(exc).__name__}: {exc}", "warn")
         return None
 
 
@@ -644,7 +654,7 @@ def transcribe_ex(audio):
 
 def speak_rate(text, speed=1.0):
     """Like speak() but with an adjustable speaking speed (Piper length_scale = 1 / speed)."""
-    if VOICE is None:
+    if VOICE is None or not (text or "").strip():
         return None
     try:
         from piper import SynthesisConfig
@@ -653,8 +663,13 @@ def speak_rate(text, speed=1.0):
         cfg = SynthesisConfig(length_scale=1.0 / min(max(float(speed), 0.5), 1.6))
         with wave.open(out.name, "wb") as wav_file:
             VOICE.synthesize_wav(gd.speakable(text), wav_file, syn_config=cfg)
+        if Path(out.name).stat().st_size < 44:
+            print("[OMNIGUARD] Piper wrote an empty WAV (speak_rate)")
+            return None
         return out.name
-    except Exception:  # noqa: BLE001
+    except Exception as exc:  # noqa: BLE001
+        print(f"[OMNIGUARD] TTS (rate) failed: {type(exc).__name__}: {exc}")
+        LOG.add("system", "Voice answer failed", f"{type(exc).__name__}: {exc}", "warn")
         return None
 
 

@@ -117,7 +117,11 @@ footer{display:none!important}
   border:1px solid var(--og-line)!important;border-radius:14px!important;box-shadow:none!important}
 .gradio-container textarea::placeholder{color:var(--og-faint)!important}
 .og-audio,.og-audio.block{background:var(--og-surface)!important;border:1px solid var(--og-line)!important;border-radius:var(--og-radius)!important;
-  box-shadow:var(--og-shadow);-webkit-backdrop-filter:var(--og-blur);backdrop-filter:var(--og-blur);overflow:hidden}
+  box-shadow:var(--og-shadow);-webkit-backdrop-filter:var(--og-blur);backdrop-filter:var(--og-blur);
+  overflow:visible!important;min-height:72px!important;padding:8px 10px!important}
+.og-audio audio{width:100%!important;min-height:40px!important;display:block!important;opacity:1!important;visibility:visible!important}
+.og-audio .waveform-container,.og-audio .controls,.og-audio .audio-container{
+  display:flex!important;opacity:1!important;visibility:visible!important;min-height:36px!important}
 .og-audio .wrap,.og-audio .audio-container,.og-audio .component-wrap,.og-audio .block,.og-audio .empty,.og-audio .file-preview-holder{background:transparent!important;border:0!important}
 .og-audio label.float,.og-audio .label-wrap,.og-audio label>span{background:var(--og-surface-2)!important;color:var(--og-muted)!important;border-radius:10px!important}
 .og-audio table,.og-audio .file-preview,.og-audio tr,.og-audio td{background:transparent!important;color:var(--og-ink)!important}

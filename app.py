@@ -564,7 +564,9 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
                             card_b = gr.HTML(EMPTY_CARD, elem_classes="og-flush")
                             cross_b = gr.HTML("", elem_classes="og-flush")
                             message_b = gr.Markdown(elem_id="alert-text")
-                            speech_b = gr.Audio(label="Spoken safety alert", type="filepath", autoplay=True, interactive=False, elem_classes="og-audio")
+                            speech_b = gr.Audio(label="Spoken safety alert", type="filepath", format="wav",
+                                                autoplay=True, interactive=False, show_download_button=True,
+                                                elem_classes="og-audio", elem_id="og-speech-b")
                             transcript_b = gr.Textbox(label="What was said (transcript)", lines=3, interactive=False, elem_classes="og-audio")
                 # ===== Voice Assistant =====
                 with gr.Tab("🗣️ Voice Assistant", id="voice"):
@@ -615,7 +617,9 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
                             listen_state = gr.State(None)
                         with gr.Column(elem_classes="og-col-result"):
                             answer_v = gr.HTML(ANSWER_EMPTY, elem_classes="og-flush")
-                            speech_v = gr.Audio(label="Spoken answer", type="filepath", autoplay=True, interactive=False, elem_classes="og-audio")
+                            speech_v = gr.Audio(label="Spoken answer", type="filepath", format="wav",
+                                                autoplay=True, interactive=False, show_download_button=True,
+                                                elem_classes="og-audio", elem_id="og-speech-v")
                             heard_v = gr.HTML("", elem_classes="og-flush")
                             cross_v = gr.HTML("", elem_classes="og-flush")
                             memory_v = gr.HTML(_memory_html(_new_state()), elem_classes="og-flush")
@@ -646,9 +650,16 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
     log_timer = gr.Timer(2.0)
 
     # ---------------- wiring ----------------
+    # Force-play the latest <audio> after a user click (browsers block silent autoplay;
+    # Gradio's autoplay flag alone is unreliable across versions).
+    _play = "() => { if (window.ogForcePlay) window.ogForcePlay(); }"
+    _scroll = ("() => { if (window.innerWidth < 1024) { const a = document.querySelector('.og-answer'); "
+               "if (a) a.scrollIntoView({behavior: 'smooth', block: 'center'}); }"
+               " if (window.ogForcePlay) window.ogForcePlay(); }")
+
     run_a.click(detect, audio_a, card_a, show_progress="minimal")
     run_a.click(detail_a, audio_a, [table_a, cross_a])
-    run_b.click(assist, audio_b, [card_b, transcript_b, message_b, speech_b])
+    run_b.click(assist, audio_b, [card_b, transcript_b, message_b, speech_b]).then(None, None, None, js=_play)
     run_b.click(crosscheck_b, audio_b, cross_b)
     for _btn, _kind, _target in ((real_a, "real", audio_a), (fake_a, "fake", audio_a), (real_b, "real", audio_b), (fake_b, "fake", audio_b)):
         _btn.click(lambda k=_kind: load_example(k), None, _target)
@@ -661,8 +672,6 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
 
     _assist_in = [mic_v, q_text, attach_v, speed_v, simple_v, aloud_v, region_v, assist_state]
     _assist_out = [answer_v, speech_v, cross_v, heard_v, hist_v, memory_v, assist_state, mic_v, q_text, speed_v, simple_v, signal_v]
-    _scroll = ("() => { if (window.innerWidth < 1024) { const a = document.querySelector('.og-answer'); "
-               "if (a) a.scrollIntoView({behavior: 'smooth', block: 'center'}); } }")
     mic_v.stop_recording(assistant_turn, _assist_in, _assist_out).then(None, None, None, js=_scroll)
     ask_btn.click(assistant_turn, _assist_in, _assist_out).then(None, None, None, js=_scroll)
     q_text.submit(assistant_turn, _assist_in, _assist_out).then(None, None, None, js=_scroll)
