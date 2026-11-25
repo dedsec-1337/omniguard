@@ -1,0 +1,27 @@
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Caches and downloaded models (never commit large binaries)
+.cache/
+models/
+voices/
+*.onnx
+*.onnx.json
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+
+# Your private calibration recordings (the repo may only hold the two example clips)
+calib/
+
+# Gradio / OS / editor leftovers
+flagged/
+gradio_cached_examples/
+.env
+.DS_Store
+.vscode/
+.idea/

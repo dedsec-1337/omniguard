@@ -1,0 +1,78 @@
+# Runs on every push and pull request. Keeps the repo from shipping broken Python.
+# Does NOT download the multi-GB models — only syntax, imports that are light, and basic structure.
+
+name: Check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  python:
+    name: Python syntax & structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Syntax check every .py file
+        run: |
+          set -e
+          echo "Checking Python syntax..."
+          python -m compileall -q -f .
+          echo "All .py files compile."
+
+      - name: Required files present
+        run: |
+          set -e
+          for f in app.py engine.py guardian.py omni_runtime.py listening.py calibrate.py channel_log.py \
+                   requirements.txt LICENSE README.md; do
+            test -f "$f" || { echo "Missing required file: $f"; exit 1; }
+          done
+          test -f assets/omniguard.css
+          test -f assets/omniguard.js
+          test -f examples/real_sample.wav
+          test -f examples/fake_sample.wav
+          echo "Required files OK."
+
+      - name: requirements.txt is not empty
+        run: |
+          test -s requirements.txt
+          grep -qi gradio requirements.txt
+          grep -qi torch requirements.txt
+          echo "requirements.txt looks sane."
+
+      - name: README has install section
+        run: |
+          grep -q "Quick install" README.md
+          grep -q "python app.py" README.md
+          echo "README install section present."
+
+  # Optional: light static checks if ruff is available (no need to install project deps)
+  lint:
+    name: Lint (ruff, optional)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff check
+        run: |
+          ruff check \
+            --select E9,F63,F7,F82 \
+            --ignore E501 \
+            app.py engine.py guardian.py omni_runtime.py listening.py calibrate.py channel_log.py \
+            || true
+          # Only hard-fail on true syntax / undefined-name class issues; style is advisory
+          ruff check --select E9,F63,F7,F82 app.py engine.py guardian.py omni_runtime.py listening.py calibrate.py channel_log.py

@@ -1,0 +1,5 @@
+# Optional extras. Install with:  pip install -r requirements-optional.txt
+# Needed only for the optional Pellav2 detector (without them it is skipped and shown as "skipped" in System & models).
+torchaudio
+scipy
+pyloudnorm
