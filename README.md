@@ -79,35 +79,52 @@ bash run_exhibition.sh          # Linux / macOS
 
 ## School exhibition — GTX 1650 (4 GB VRAM) / ROG Strix class laptop
 
-This project was tuned for exactly this class of machine (GTX 1650 Mobile 4 GB, 32 GB system RAM).
+This project is built for exactly this class of machine (GTX 1650 Mobile 4 GB, 32 GB system RAM).
 
-**Recommended settings for a reliable live demo:**
+**What the app does automatically on a 4 GB card**
+
+- Detects ≤ 8 GB VRAM → turns on **GPU sharing** (models wait in system RAM, borrow the GPU one at a time).
+- Peak VRAM ≈ the largest single model, not all of them at once.
+- If no profile is set, defaults to **`fast`** (two quickest detectors, 2 windows, tiny Whisper).
+- A model that will not fit the 3.2 GB budget runs on the CPU instead of crashing.
+
+You can still force Balanced/Thorough; they are just slower on this GPU.
+
+**Recommended live-demo settings**
 
 | Setting | Value | Why |
 |---|---|---|
-| Profile | `fast` | Uses the two quickest detectors and fewer windows → lower VRAM and faster answers |
-| Offline | `HF_HUB_OFFLINE=1` | Venue Wi-Fi is often bad; models stay local |
-| Detectors | default (`arena,gary,melody`) or `gary` alone if you want absolute speed | GPU sharing is automatic under 8 GB VRAM |
+| Profile | `fast` (auto) | Lowest VRAM, quick answers |
+| Offline | `HF_HUB_OFFLINE=1` | Venue Wi-Fi is often bad |
+| Swap | `on` (auto under 8 GB) | One detector on the GPU at a time |
+| Detectors | default, or `gary` alone if still tight | Three models are fine with sharing |
 
-**The day before the exhibition**
+**The day before**
 
-1. Run the app once with internet so every model downloads.
-2. (Optional but strongly recommended) Put real + AI voice clips in `calib/real/` and `calib/fake/`, then run:
+1. Run once **with internet** so the ~3 GB of models download.
+2. (Strongly recommended) Put real + AI clips in `calib/real/` and `calib/fake/`, then:
    ```bash
    python calibrate.py
    ```
-   This writes a small `calibration.json` so the percentages match *your* audio.
-3. Test both example buttons (Real voice / AI voice). Confirm green and red.
-4. Practise the 2-minute script in `demo_script.md`.
+3. Test **Real voice** → green, **AI voice** → red. Replace the example WAVs if not.
+4. Practise `demo_script.md`.
 
 **On the day**
 
 ```bash
-source venv/bin/activate          # or Windows activate
-HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast python app.py
+source venv/bin/activate          # Windows: venv\Scripts\activate
+bash run_exhibition.sh
+# or:
+# HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast OMNIGUARD_SWAP=on python app.py
 ```
 
-Keep a phone hotspot ready only as emergency fallback. The offline flag means the app will not try the network.
+If VRAM is still tight, run with one detector only:
+
+```bash
+OMNIGUARD_DETECTORS=gary HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast python app.py
+```
+
+Keep a phone hotspot only as emergency fallback.
 
 ---
 
@@ -141,9 +158,10 @@ It prints accuracy before and after, and saves `calibration.json`. Commit that s
 
 | Variable | Default | Effect |
 |---|---|---|
-| `OMNIGUARD_PROFILE` | `balanced` | `fast` / `balanced` / `thorough` |
+| `OMNIGUARD_PROFILE` | `fast` on ≤6 GB VRAM, else `balanced` | `fast` / `balanced` / `thorough` |
 | `OMNIGUARD_DETECTORS` | `arena,gary,melody` | Comma list of detector keys. Example: `gary` for one model only |
-| `OMNIGUARD_SWAP` | `auto` | GPU sharing for small VRAM cards (on automatically under 8 GB) |
+| `OMNIGUARD_SWAP` | `auto` | GPU sharing: models in RAM, one at a time on GPU (on under 8 GB) |
+| `OMNIGUARD_VRAM_GB` | `3.2` | Soft budget; models larger than this run on CPU |
 | `OMNIGUARD_WHISPER` | `base` | Whisper size (`tiny`, `base`, `small`…) |
 | `OMNIGUARD_REGION` | `IN` | Helpline text (India 1930 / cybercrime.gov.in by default) |
 | `OMNIGUARD_LLM` | `qwen2.5:1.5b` | Local Ollama model, or `off` |

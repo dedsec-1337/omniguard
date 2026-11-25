@@ -4,6 +4,7 @@ No UI code lives here (see app.py). Everything is local: models run on this comp
 shared one detector at a time so a 4 GB laptop GPU is enough, and every model can fail without taking
 the others down.
 """
+import contextlib
 import json
 import math
 import os
@@ -100,7 +101,7 @@ ACTIVE = _base + _new or ["arena", "gary", "melody"]
 WEIGHTS = {"arena": 1.0, "gary": 1.0, "melody": 0.6, "pellav2": 1.2, "anti_small": 1.0,
            "gustking": 1.0, "aasist_lite": 1.1}
 SPEED_RANK = ["melody", "gary", "arena", "gustking", "pellav2"]  # quickest first (profile "Fast")
-rt.set_global_profile(os.environ.get("OMNIGUARD_PROFILE", "balanced").lower())
+# Profile is chosen after VRAM is known (see hardware plan section).
 
 
 def read_calibration():
@@ -143,7 +144,12 @@ def _fake_index(config):
 
 
 def _load_detector_hf(key):
-    """Plain Transformers loader: arena = custom model code, the others = audio-classification."""
+    """Plain Transformers loader: arena = custom model code, the others = audio-classification.
+
+    Always load weights to CPU first. On a 4 GB card (SWAP_MODE) they stay in RAM and only
+    borrow the GPU one at a time during scoring. Putting three models on the GPU at startup
+    is what OOM'd GTX 1650-class laptops.
+    """
     spec = CATALOG[key]
     try:
         from transformers import AutoFeatureExtractor, AutoModel, AutoModelForAudioClassification
@@ -152,7 +158,7 @@ def _load_detector_hf(key):
         else:
             extractor = AutoFeatureExtractor.from_pretrained(spec["id"])
             model = AutoModelForAudioClassification.from_pretrained(spec["id"])
-        model = model.to(DEVICE).eval()
+        model = model.to("cpu").eval()
         return {"key": key, "kind": spec["kind"], "model": model, "extractor": extractor,
                 "fake": _fake_index(model.config)}, None
     except Exception as exc:  # noqa: BLE001 - any failure must degrade gracefully
@@ -194,12 +200,26 @@ def _load_piper_voice():
 
 
 # --- Hardware plan ------------------------------------------------------------------------------------
-# GTX 1650-class laptops have ~4 GB of VRAM: detectors wait in RAM and borrow the GPU one at a time,
-# and a model that would not fit the budget (OMNIGUARD_VRAM_GB, default 3.6) stays on the CPU.
+# GTX 1650 Mobile (4 GB): detectors stay in system RAM and borrow the GPU one at a time.
+# Peak VRAM ≈ largest single model, not the sum. A model that will not fit the budget runs on CPU.
+# Default budget 3.2 GB leaves headroom for the driver and Gradio on a 4 GB card.
 SWAP_MODE = rt.want_swap(torch, DEVICE, _ZEROGPU, os.environ.get("OMNIGUARD_SWAP", "auto").lower())
 HW = rt.hardware_summary(torch, DEVICE, SWAP_MODE)
-RESIDENCY = rt.Residency(torch, SWAP_MODE, budget_gb=float(os.environ.get("OMNIGUARD_VRAM_GB", "3.6")))
+_VRAM_BUDGET = float(os.environ.get("OMNIGUARD_VRAM_GB", "3.2"))
+RESIDENCY = rt.Residency(torch, SWAP_MODE, budget_gb=_VRAM_BUDGET)
 _GPU_LOCK = threading.RLock()
+
+# Auto Fast profile on small VRAM unless the user pinned OMNIGUARD_PROFILE.
+# Balanced/Thorough still work; they just share the GPU and take longer.
+_user_profile = os.environ.get("OMNIGUARD_PROFILE", "").strip().lower()
+if _user_profile:
+    rt.set_global_profile(_user_profile)
+elif SWAP_MODE or (HW.get("vram_gb") is not None and HW["vram_gb"] <= 6.0):
+    rt.set_global_profile("fast")
+    print(f"[OMNIGUARD] small GPU detected ({HW.get('vram_gb') or '?'} GB) → default profile=fast "
+          f"(set OMNIGUARD_PROFILE=balanced to override)")
+else:
+    rt.set_global_profile("balanced")
 
 
 def load_detector(key):
@@ -221,15 +241,20 @@ def load_detector(key):
                         "extractor": None, "fake": 0}, None
         except Exception as exc:  # noqa: BLE001
             det, err = None, f"{type(exc).__name__}: {exc}"
-        if det is not None and DEVICE == "cuda" and not SWAP_MODE:
-            det["model"].to(DEVICE)
     else:
         det, err = _load_detector_hf(key)
     rt.record_load(key, time.perf_counter() - t0)
     if det is None:
         rt.set_status(key, "failed", err or "")
     else:
-        if SWAP_MODE:
+        # Large VRAM: park on GPU. Small VRAM (SWAP): keep on CPU; borrow during score.
+        if DEVICE == "cuda" and not SWAP_MODE:
+            try:
+                det["model"].to(DEVICE)
+            except Exception as exc:  # noqa: BLE001 - fall back to CPU rather than crash
+                print(f"[OMNIGUARD] {key}: could not move to GPU ({type(exc).__name__}), keeping on CPU")
+                RESIDENCY.release(det["model"])
+        else:
             RESIDENCY.release(det["model"])
         rt.set_status(key, "loaded", "")
     return det, err
@@ -309,6 +334,10 @@ for _key in ACTIVE:
         DETECTORS.append(_det)
     else:  # technical detail goes to the console, not to the user's screen
         print(f"[OMNIGUARD] detector '{_key}' unavailable -> {_err}")
+    # Free any transient CUDA allocations between models (matters on 4 GB cards).
+    if DEVICE == "cuda":
+        with contextlib.suppress(Exception):
+            torch.cuda.empty_cache()
 ensure_whisper()
 VOICE, VOICE_ERR = load_piper()
 for _name, _err in (("whisper", WHISPER_ERR), ("piper", VOICE_ERR)):

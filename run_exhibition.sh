@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
-# One-command start for school exhibitions / offline demos.
-# Uses Fast profile (friendly to 4 GB VRAM cards like GTX 1650) and never
-# tries the network after models are already cached.
+# One-command start for school exhibitions / 4 GB VRAM laptops (GTX 1650 class).
+# Offline + Fast profile. Models stay in RAM and borrow the GPU one at a time.
 
 set -e
 cd "$(dirname "$0")"
@@ -16,12 +15,16 @@ fi
 
 export HF_HUB_OFFLINE=1
 export OMNIGUARD_PROFILE="${OMNIGUARD_PROFILE:-fast}"
-# Optional: force a single light detector if you still hit VRAM pressure
+export OMNIGUARD_SWAP="${OMNIGUARD_SWAP:-on}"
+export OMNIGUARD_VRAM_GB="${OMNIGUARD_VRAM_GB:-3.2}"
+# If you still hit VRAM pressure, uncomment the next line (one light detector only):
 # export OMNIGUARD_DETECTORS=gary
 
-echo "OMNIGUARD exhibition mode"
-echo "  profile = $OMNIGUARD_PROFILE"
-echo "  offline = on"
+echo "OMNIGUARD exhibition mode (4 GB VRAM safe)"
+echo "  profile  = $OMNIGUARD_PROFILE"
+echo "  swap     = $OMNIGUARD_SWAP"
+echo "  budget   = ${OMNIGUARD_VRAM_GB} GB"
+echo "  offline  = on"
 echo "  open the URL printed below in your browser"
 echo ""
 
