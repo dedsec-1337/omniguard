@@ -10,214 +10,253 @@ app_file: app.py
 pinned: false
 ---
 
-# 🛡️ OMNIGUARD — Protect your voice, protect your people.
+<div align="center">
 
-**GitHub:** https://github.com/dedsec-1337/omniguard.git
+# OMNIGUARD
 
-OMNIGUARD is a local web app that fights AI voice scams (vishing) and makes the result usable for people who cannot rely on reading a screen.
+**Protect your voice. Protect your people.**
 
-| Tab | What it does |
-|---|---|
-| 🎙️ **Deepfake Detector** | Upload or record a clip. Several detectors score short windows and vote. A ring shows the chance it is AI-generated: 🟢 under 30%, 🟡 30–70% uncertain, 🔴 over 70%, plus a plain-language tip. |
-| ♿ **Accessibility Assistant** | Transcribes the clip, applies the same verdict, writes a short rule-based safety message (no LLM) and reads it aloud with a large **Play Voice Alert** button. |
-| 🗣️ **Voice Assistant** | Speak or type a question. It answers out loud with safety guidance, helplines, and optional local LLM for open questions. |
+Local deepfake voice detection · spoken safety alerts · offline-first
 
-Everything runs on your laptop. No cloud required after the first model download.
+[![Python 3.12](https://img.shields.io/badge/Python-3.11%20%7C%203.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![Gradio](https://img.shields.io/badge/Gradio-6.x-FF7C00?style=flat-square)](https://gradio.app/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![Runs offline](https://img.shields.io/badge/Offline-ready-2dd4bf?style=flat-square)](#exhibition--low--vram-laptops)
+
+[Features](#features) · [Install](#install) · [Exhibition](#exhibition--low--vram-laptops) · [Hardware](#hardware--gpu) · [Configure](#configuration)
+
+</div>
 
 ---
 
-## Quick install (Windows / Linux / macOS)
+## Why it exists
 
-You need **Python 3.11 or 3.12** and about **8 GB free disk** (models download on first run).
+AI voice cloning needs only a few seconds of audio. Most people cannot tell a clone from the real person. In McAfee’s 2023 survey, **69%** of Indian respondents said they could not tell an AI voice from a real one, and **83%** of victims lost money.
+
+Seniors and blind or low-vision users are especially exposed — they cannot cross-check a call with a screen.
+
+OMNIGUARD is a **local** web app for that problem: detect synthetic speech, explain the result in plain language, and **speak** the safety message so the answer is usable without reading.
+
+> Nothing is sent to the cloud after models are downloaded. Analysis stays on your machine.
+
+---
+
+## Features
+
+| | Module | What you get |
+|:--:|:--|:--|
+| **1** | **Deepfake Detector** | Upload or record a clip. An ensemble of detectors scores short windows and votes. A probability ring and traffic light: green &lt; 30%, yellow 30–70%, red &gt; 70%. Plain-language tip included. |
+| **2** | **Accessibility Assistant** | Same verdict, plus transcription and a rule-based safety message read aloud with a large **Play Voice Alert** control. No LLM in the safety path. |
+| **3** | **Voice Assistant** | Speak or type. Guided responses for “I think I’m being scammed” and “I already sent money”, regional helplines, optional local LLM for open questions. |
+
+**Detection approach**
+
+1. Ensemble of models trained on different data (DF Arena, garystafford wav2vec2, MelodyMachine; Pellav2 optional).
+2. Up to several ~4 s windows across the clip after silence trim.
+3. Disagreement between detectors is never labelled green.
+4. Optional calibration on *your* audio so scores match real conditions.
+
+---
+
+## Install
+
+**Requirements:** Python **3.11 or 3.12**, ~**8 GB** free disk for models, internet on first run only.
 
 ```bash
-# 1. Get the code
 git clone https://github.com/dedsec-1337/omniguard.git
 cd omniguard
 
-# 2. Create a virtual environment (keeps your system Python clean)
 python3 -m venv venv
 
-# 3. Activate it
-#    Linux / macOS:
+# Linux / macOS
 source venv/bin/activate
-#    Windows (Command Prompt):
-venv\Scripts\activate.bat
-#    Windows (PowerShell):
-venv\Scripts\Activate.ps1
+# Windows CMD:        venv\Scripts\activate.bat
+# Windows PowerShell: venv\Scripts\Activate.ps1
 
-# 4. Install the packages (takes a few minutes)
 pip install -r requirements.txt
-
-# 5. Start the app
 python app.py
 ```
 
-Open the address it prints (usually **http://127.0.0.1:7860**) in your browser.
+Open **http://127.0.0.1:7860** in your browser.
 
-**First run needs internet.** It downloads roughly 3 GB of models (detectors + Whisper + one Piper voice) into the Hugging Face cache. After that you can run offline.
+First launch downloads roughly **3 GB** (detectors, Whisper, one Piper voice) into the Hugging Face cache. Later runs can be fully offline.
 
-### Optional: one-command exhibition start (after first successful run)
+<details>
+<summary><strong>Windows one-liner (after install)</strong></summary>
 
-```bash
-# Linux / macOS
-HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast python app.py
-
-# Windows (Command Prompt)
+```bat
 set HF_HUB_OFFLINE=1
 set OMNIGUARD_PROFILE=fast
 python app.py
 ```
 
-Or use the helper script:
-
-```bash
-bash run_exhibition.sh          # Linux / macOS
-```
+</details>
 
 ---
 
-## School exhibition — GTX 1650 (4 GB VRAM) / ROG Strix class laptop
+## Exhibition & low‑VRAM laptops
 
-This project is built for exactly this class of machine (GTX 1650 Mobile 4 GB, 32 GB system RAM).
+Tuned for **GTX 1650‑class** machines (≈4 GB VRAM, 16–32 GB system RAM), including ASUS ROG Strix G531GT.
 
-**What the app does automatically on a 4 GB card**
+| Behaviour | Detail |
+|:--|:--|
+| GPU sharing | Models stay in system RAM; the GPU runs **one detector at a time** (peak VRAM ≈ largest model). |
+| Auto profile | On ≤6 GB VRAM, default is **`fast`** unless you set `OMNIGUARD_PROFILE`. |
+| Soft budget | Models above `OMNIGUARD_VRAM_GB` (default **3.2**) fall back to CPU instead of crashing. |
+| Offline | `HF_HUB_OFFLINE=1` so venue Wi‑Fi cannot break the demo. |
 
-- Detects ≤ 8 GB VRAM → turns on **GPU sharing** (models wait in system RAM, borrow the GPU one at a time).
-- Peak VRAM ≈ the largest single model, not all of them at once.
-- If no profile is set, defaults to **`fast`** (two quickest detectors, 2 windows, tiny Whisper).
-- A model that will not fit the 3.2 GB budget runs on the CPU instead of crashing.
+**Day before**
 
-You can still force Balanced/Thorough; they are just slower on this GPU.
-
-**Recommended live-demo settings**
-
-| Setting | Value | Why |
-|---|---|---|
-| Profile | `fast` (auto) | Lowest VRAM, quick answers |
-| Offline | `HF_HUB_OFFLINE=1` | Venue Wi-Fi is often bad |
-| Swap | `on` (auto under 8 GB) | One detector on the GPU at a time |
-| Detectors | default, or `gary` alone if still tight | Three models are fine with sharing |
-
-**The day before**
-
-1. Run once **with internet** so the ~3 GB of models download.
-2. (Strongly recommended) Put real + AI clips in `calib/real/` and `calib/fake/`, then:
-   ```bash
-   python calibrate.py
-   ```
-3. Test **Real voice** → green, **AI voice** → red. Replace the example WAVs if not.
-4. Practise `demo_script.md`.
+1. Run once **online** so models download.
+2. (Recommended) Calibrate on your own clips — see [Calibration](#calibration).
+3. Confirm **Real voice** → green, **AI voice** → red.
+4. Rehearse [`demo_script.md`](demo_script.md).
 
 **On the day**
 
 ```bash
-source venv/bin/activate          # Windows: venv\Scripts\activate
+source venv/bin/activate   # Windows: venv\Scripts\activate
 bash run_exhibition.sh
-# or:
-# HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast OMNIGUARD_SWAP=on python app.py
 ```
 
-If VRAM is still tight, run with one detector only:
+Equivalent:
+
+```bash
+HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast OMNIGUARD_SWAP=on python app.py
+```
+
+If VRAM is still tight:
 
 ```bash
 OMNIGUARD_DETECTORS=gary HF_HUB_OFFLINE=1 OMNIGUARD_PROFILE=fast python app.py
 ```
 
-Keep a phone hotspot only as emergency fallback.
+---
+
+## Hardware & GPU
+
+| Component | Device |
+|:--|:--|
+| Detectors | **CUDA** when available (shared on ≤8 GB cards) |
+| Whisper | **CPU** by default (keeps VRAM free) |
+| Piper TTS | **CPU** |
+
+You should see on startup:
+
+```text
+device=cuda swap=True detectors=['arena', 'gary', 'melody'] mode=fast
+```
+
+| Goal | Command |
+|:--|:--|
+| Force GPU sharing | `OMNIGUARD_SWAP=on python app.py` |
+| Whisper on GPU (only if detectors are light) | `OMNIGUARD_WHISPER_DEVICE=cuda OMNIGUARD_DETECTORS=gary python app.py` |
+| Check CUDA | `python -c "import torch; print(torch.cuda.is_available(), torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"` |
 
 ---
 
-## How detection works
-
-No single open model catches every AI voice. On recent deepfake benchmarks, open detectors lose a lot of accuracy compared with older lab tests. OMNIGUARD therefore:
-
-1. **Ensembles several detectors** trained on different data (DF Arena, garystafford wav2vec2, MelodyMachine, optional Pellav2).
-2. **Scores up to four ~4 s windows** spread across the clip after trimming silence.
-3. **Never says GREEN when the detectors disagree.**
-4. **Can be calibrated** on your own clips so the percentages mean something for the voices you care about.
-
-Nothing is trained here — only pre-trained models are used. All analysis stays on this computer.
-
----
-
-## Calibrate (recommended before any serious demo)
+## Calibration
 
 ```bash
 mkdir -p calib/real calib/fake
-# Drop 15–30 real human recordings into calib/real/
-# Drop 15–30 AI / TTS voices into calib/fake/
+# 15–30 real recordings → calib/real/
+# 15–30 AI / TTS clips  → calib/fake/
 python calibrate.py
 ```
 
-It prints accuracy before and after, and saves `calibration.json`. Commit that small file. The `calib/` folder itself is git-ignored so private recordings never leave your machine.
+Writes `calibration.json` (safe to commit). The `calib/` folder is git‑ignored so private audio never leaves your machine.
+
+Replace `examples/real_sample.wav` and `examples/fake_sample.wav` with clips that score green / red after calibration before any public demo.
 
 ---
 
-## Environment variables (optional)
+## Configuration
 
-| Variable | Default | Effect |
-|---|---|---|
-| `OMNIGUARD_PROFILE` | `fast` on ≤6 GB VRAM, else `balanced` | `fast` / `balanced` / `thorough` |
-| `OMNIGUARD_DETECTORS` | `arena,gary,melody` | Comma list of detector keys. Example: `gary` for one model only |
-| `OMNIGUARD_SWAP` | `auto` | GPU sharing: models in RAM, one at a time on GPU (on under 8 GB) |
-| `OMNIGUARD_VRAM_GB` | `3.2` | Soft budget; models larger than this run on CPU |
-| `OMNIGUARD_WHISPER` | `base` | Whisper size (`tiny`, `base`, `small`…) |
-| `OMNIGUARD_REGION` | `IN` | Helpline text (India 1930 / cybercrime.gov.in by default) |
-| `OMNIGUARD_LLM` | `qwen2.5:1.5b` | Local Ollama model, or `off` |
-| `HF_HUB_OFFLINE` | (unset) | `1` = never touch the network (exhibition mode) |
+| Variable | Default | Purpose |
+|:--|:--|:--|
+| `OMNIGUARD_PROFILE` | `fast` on ≤6 GB VRAM, else `balanced` | `fast` · `balanced` · `thorough` |
+| `OMNIGUARD_DETECTORS` | `arena,gary,melody` | Comma list; e.g. `gary` for one model |
+| `OMNIGUARD_SWAP` | `auto` | GPU residency sharing (on under 8 GB) |
+| `OMNIGUARD_VRAM_GB` | `3.2` | Soft VRAM budget (GB) |
+| `OMNIGUARD_WHISPER` | profile‑dependent | `tiny` · `base` · `small` · … |
+| `OMNIGUARD_WHISPER_DEVICE` | `cpu` | Set `cuda` to put Whisper on GPU |
+| `OMNIGUARD_REGION` | `IN` | Helpline text (e.g. India 1930) |
+| `OMNIGUARD_LLM` | `qwen2.5:1.5b` | Ollama model, or `off` |
+| `HF_HUB_OFFLINE` | unset | `1` = no network |
 
----
+**Profiles**
 
-## Deploy on Hugging Face Spaces (ZeroGPU)
-
-The YAML at the top of this file is the Space config. Choose **ZeroGPU** hardware. Only the scoring path uses the GPU decorator; locally that decorator does nothing. Commit `calibration.json` if you have one.
-
----
-
-## Licences and trust
-
-- DF Arena 500M is **non-commercial** and uses `trust_remote_code=True`. Fine for an exhibition or school project; do not use it in a commercial product without permission.
-- Other detectors are Apache-2.0 or MIT.
-- The app itself is MIT (see `LICENSE`).
+| Profile | Detectors | Windows | Speech | Notes |
+|:--|:--|:--|:--|:--|
+| Fast | 2 quickest | 2 | tiny | Best for 4 GB / live demos |
+| Balanced | all loaded | 4 | base | Everyday default on larger GPUs |
+| Thorough | all loaded | 6 | small | Slowest, most careful |
 
 ---
 
-## Limitations
+## Deploy (Hugging Face Spaces)
 
-No detector is 100 % accurate. Newer cloning systems, heavy phone compression and background noise can all push results into the yellow zone or produce false confidence. Treat every result as a **warning**, never as proof. Always verify by calling back on a number you already know.
+The YAML front matter at the top of this file is the Space config. Select **ZeroGPU** hardware. Commit `calibration.json` if you use calibration.
 
 ---
 
 ## Optional extras
 
 ```bash
-pip install -r requirements-optional.txt   # enables Pellav2 detector
+pip install -r requirements-optional.txt   # Pellav2 detector (~2.3 GB; opt-in via OMNIGUARD_DETECTORS)
 ```
 
-Local LLM (optional open questions in the Voice Assistant):
-
 ```bash
-# Install Ollama, then:
+# Optional local LLM for open questions in the Voice Assistant
 ollama pull qwen2.5:1.5b
-# Leave OMNIGUARD_LLM at default, or set OMNIGUARD_LLM=off to disable
+# Disable: OMNIGUARD_LLM=off
 ```
 
 ---
 
 ## Project layout
 
-```
+```text
 omniguard/
-├── app.py              # Gradio UI
-├── engine.py           # Detectors, scoring, Whisper, Piper
-├── guardian.py         # Safety messages, intents, helplines
-├── listening.py        # Continuous mic for the Voice Assistant
-├── omni_runtime.py     # Profiles, status, hardware helpers
-├── channel_log.py      # Activity log
-├── calibrate.py        # Learn thresholds / weights on your clips
-├── assets/             # CSS, JS, font
-├── examples/           # Placeholder real / fake clips (replace before demo)
-├── demo_script.md      # 2-minute live script
-└── requirements.txt
+├── app.py                 # Gradio UI
+├── engine.py              # Detectors, scoring, Whisper, Piper
+├── guardian.py            # Safety copy, intents, helplines
+├── listening.py           # Continuous microphone
+├── omni_runtime.py        # Profiles, status, GPU residency
+├── channel_log.py         # Activity log
+├── calibrate.py           # Fit thresholds / weights on your clips
+├── run_exhibition.sh      # Offline + fast profile launcher
+├── assets/                # CSS, JS, font
+├── examples/              # Demo clips (replace before exhibition)
+├── demo_script.md         # ~2 minute live script
+├── requirements.txt
+└── LICENSE
 ```
+
+---
+
+## Licences
+
+| Component | Terms |
+|:--|:--|
+| OMNIGUARD (this repo) | [MIT](LICENSE) |
+| DF Arena 500M | **Non‑commercial**; loads with `trust_remote_code=True` — fine for school / exhibition, not for paid products without permission |
+| Other detectors | Apache‑2.0 / MIT |
+
+---
+
+## Limitations
+
+No detector is perfect. New cloning systems, phone compression, and noise can produce yellow scores or false confidence.
+
+**Treat every result as a warning, never as proof.** Always verify by calling back on a number you already know.
+
+---
+
+<div align="center">
+
+**OMNIGUARD** · local · offline‑capable · built for real people
+
+[GitHub](https://github.com/dedsec-1337/omniguard) · [Demo script](demo_script.md) · [License](LICENSE)
+
+</div>
