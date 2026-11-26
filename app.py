@@ -565,7 +565,7 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
                             cross_b = gr.HTML("", elem_classes="og-flush")
                             message_b = gr.Markdown(elem_id="alert-text")
                             speech_b = gr.Audio(label="Spoken safety alert", type="filepath", format="wav",
-                                                autoplay=True, interactive=False, show_download_button=True,
+                                                autoplay=True, interactive=False,
                                                 elem_classes="og-audio", elem_id="og-speech-b")
                             transcript_b = gr.Textbox(label="What was said (transcript)", lines=3, interactive=False, elem_classes="og-audio")
                 # ===== Voice Assistant =====
@@ -618,7 +618,7 @@ with gr.Blocks(title="OMNIGUARD — Protect your voice, protect your people.") a
                         with gr.Column(elem_classes="og-col-result"):
                             answer_v = gr.HTML(ANSWER_EMPTY, elem_classes="og-flush")
                             speech_v = gr.Audio(label="Spoken answer", type="filepath", format="wav",
-                                                autoplay=True, interactive=False, show_download_button=True,
+                                                autoplay=True, interactive=False,
                                                 elem_classes="og-audio", elem_id="og-speech-v")
                             heard_v = gr.HTML("", elem_classes="og-flush")
                             cross_v = gr.HTML("", elem_classes="og-flush")

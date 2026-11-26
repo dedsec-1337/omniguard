@@ -370,3 +370,90 @@ body.og-large .gradio-container{font-size:1.12rem}
   .og-ring{width:150px}.og-mrow{grid-template-columns:minmax(0,1.3fr) 36px minmax(40px,1fr) 38px;font-size:.86rem}.og-mrow .og-st{display:none}
   .og-answer p{font-size:1.2rem}.og-verdict h2{font-size:1.35rem}
 }
+
+/* ------------------------------------------------------------------------------------------------
+   UX polish — smooth, exhibition-friendly, 4 GB laptop safe
+   ------------------------------------------------------------------------------------------------ */
+:root{
+  --og-ease:cubic-bezier(.22,1,.36,1);
+  --og-dur:.28s;
+}
+body[data-og-motion="none"]{--og-dur:0s}
+body[data-og-motion="soft"]{--og-dur:.22s}
+body[data-og-motion="full"]{--og-dur:.35s}
+
+/* Smoother page + less jank while models run */
+.gradio-container,.main,#og-main{
+  scroll-behavior:smooth;
+}
+.og-panel,.og-result,.og-answer,.og-cross,.og-mtable,.og-audio{
+  transition:border-color var(--og-dur) var(--og-ease),box-shadow var(--og-dur) var(--og-ease),
+             background-color var(--og-dur) var(--og-ease),transform var(--og-dur) var(--og-ease);
+}
+
+/* Primary CTA: large, sticky feel, hard to miss during a demo */
+button.primary,.og-cta{
+  min-height:52px!important;
+  font-size:1.05rem!important;
+  font-weight:700!important;
+  letter-spacing:.01em!important;
+  transition:transform .18s var(--og-ease),filter .18s var(--og-ease),opacity .18s var(--og-ease)!important;
+}
+button.primary:hover,.og-cta:hover{filter:brightness(1.06);transform:translateY(-1px)}
+button.primary:active,.og-cta:active{transform:translateY(0);filter:brightness(.98)}
+button.primary:disabled,.og-cta:disabled{opacity:.55;transform:none;cursor:wait}
+
+/* Ghost sample chips — clear secondary actions */
+.og-ghost{
+  min-height:36px!important;
+  transition:background .18s var(--og-ease),border-color .18s var(--og-ease)!important;
+}
+.og-ghost:hover{background:var(--og-surface-2)!important;border-color:var(--og-line-2)!important}
+
+/* Result cards ease in instead of hard pop */
+.og-result,.og-answer,.og-cross{
+  animation:ogIn var(--og-dur) var(--og-ease) both;
+}
+@keyframes ogIn{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+body[data-og-motion="none"] .og-result,
+body[data-og-motion="none"] .og-answer,
+body[data-og-motion="none"] .og-cross{animation:none}
+
+/* Keep the verdict ring from layout-shifting the page */
+.og-ring{flex:0 0 auto;min-width:140px}
+
+/* Nav rail: clearer active state for live demos */
+.og-nav-item{
+  transition:background .18s var(--og-ease),color .18s var(--og-ease),border-color .18s var(--og-ease);
+}
+.og-nav-item.is-active{
+  background:var(--og-surface-2)!important;
+  border-color:var(--og-brand)!important;
+  color:var(--og-ink)!important;
+}
+
+/* Progress bar less noisy */
+.progress-bar,.wrap.default.full{transition:width .25s var(--og-ease)!important}
+
+/* Prefer reduced motion when the OS asks */
+@media (prefers-reduced-motion:reduce){
+  :root{--og-dur:0s}
+  .og-result,.og-answer,.og-cross{animation:none}
+  button.primary,.og-cta,.og-ghost,.og-nav-item{transition:none!important}
+}
+
+/* Touch targets on exhibition tablets / phones */
+@media (max-width:768px){
+  button.primary,.og-cta{min-height:56px!important;font-size:1.08rem!important}
+  .og-ghost{min-height:42px!important}
+  .og-shell{gap:14px!important}
+}
+
+/* Focus visible for keyboard / demo clickers */
+button:focus-visible,.og-nav-item:focus-visible,a:focus-visible{
+  outline:2px solid var(--og-focus)!important;
+  outline-offset:2px!important;
+}

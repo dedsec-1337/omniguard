@@ -26,12 +26,21 @@ import omni_runtime as rt
 from channel_log import LOG
 
 # --- ZeroGPU shim -----------------------------------------------------------
-# WHY: on Hugging Face the real `spaces.GPU` decorator borrows a GPU; on a laptop
-# the package may be missing, so we swap in a decorator that does nothing.
+# WHY: on Hugging Face Spaces the real `spaces.GPU` decorator borrows a GPU.
+# Locally the `spaces` package is often installed (it's in requirements.txt) but
+# we are NOT on ZeroGPU — treating it as ZeroGPU disabled GPU sharing and OOMed
+# 4 GB cards. Only enable when HF actually sets SPACE_ID / SPACES_ZERO_GPU.
+_ON_SPACES = bool(os.environ.get("SPACE_ID") or os.environ.get("SPACES_ZERO_GPU")
+                  or os.environ.get("SYSTEM") == "spaces")
 try:
-    import spaces
-    _ZEROGPU = True
+    import spaces as _spaces_mod
 except ImportError:
+    _spaces_mod = None
+
+if _ON_SPACES and _spaces_mod is not None:
+    spaces = _spaces_mod
+    _ZEROGPU = True
+else:
     _ZEROGPU = False
 
     class _FakeSpaces:
@@ -86,17 +95,12 @@ CATALOG.update({
                     "unavailable": "repo not found on the Hugging Face Hub (checked November 2026)"},
 })
 # Choose detectors without editing code: OMNIGUARD_DETECTORS=arena,gary,melody
-# Default: the three solid HF models. Optionals (pellav2, anti_small, etc.) only
-# when the user names them or when no OMNIGUARD_DETECTORS is set and they are
-# available at runtime (pellav2 needs the optional requirements).
+# Default: three solid models. Pellav2 is ~2.3 GB and will OOM a 4 GB card if it
+# is force-loaded onto the GPU — opt in only via OMNIGUARD_DETECTORS=...,pellav2.
 _default = "arena,gary,melody"
 _base = [k.strip() for k in os.environ.get("OMNIGUARD_DETECTORS", _default).split(",")
          if k.strip() in CATALOG]
-# Only auto-append pellav2 when the user did not pin a list; anti_small is never
-# auto-loaded (fairseq, unavailable under Transformers).
-_new = [] if "OMNIGUARD_DETECTORS" in os.environ else [
-    k for k in ("pellav2",) if k in CATALOG and k not in _base]
-ACTIVE = _base + _new or ["arena", "gary", "melody"]
+ACTIVE = _base or ["arena", "gary", "melody"]
 # Voting weights (calibrate.py can replace them with weights learned from your own clips).
 WEIGHTS = {"arena": 1.0, "gary": 1.0, "melody": 0.6, "pellav2": 1.2, "anti_small": 1.0,
            "gustking": 1.0, "aasist_lite": 1.1}
